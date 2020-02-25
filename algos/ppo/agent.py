@@ -37,8 +37,6 @@ class PPOAgent:
         self.critic       = Critic(observation_space)
         self.actor_loss   = None
         self.critic_loss  = None
-        self.actor_grads  = None
-        self.critic_grads = None
         self.advs         = None
         self.rews         = None
         self.acts         = None
@@ -109,6 +107,7 @@ class PPOAgent:
         """
         Update actor ACTOR_UPDATE_STEPS times so to minimise actor_loss.
         """
+        grad_list = []
         for _ in range(ACTOR_UPDATE_STEPS):
             with tf.GradientTape() as tape:
                 losses = actor_loss(self.actor(obs1), obs1, acts, advs, probs)
@@ -116,8 +115,6 @@ class PPOAgent:
             grads = tape.gradient(losses, self.actor.trainable_variables)
             self.actor_optimizer.apply_gradients(
                 zip(grads, self.actor.trainable_variables))
-            self.actor_grads += tf.reduce_mean(grads)
-        self.actor_grads = tf.reduce_mean(grads)
         return np.mean(losses)
 
     def _update_critic(self, obs1, rews):
