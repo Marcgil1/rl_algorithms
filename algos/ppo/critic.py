@@ -1,7 +1,7 @@
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
 
-from networks import DenseBase
+from .networks import DenseBase
 
 class Critic(Model):
     """

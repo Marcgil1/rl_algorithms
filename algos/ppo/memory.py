@@ -1,5 +1,7 @@
 import numpy as np
+from collections import deque
 from scipy.signal import lfilter
+import sys
 
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
@@ -7,15 +9,16 @@ GAE_LAMBDA = 0.95
 class Memory:
     """
     Memory fitting PPO requeriments. i.e. stores tuples of the form
-    (obs1, acts, rews, obs2, done, prob, vals). DOES NOT HAVE MAXIMUM
-    SIZE => must be manually emptied.
+    (obs1, acts, rews, obs2, done, prob, vals).
     """
     
-    def __init__(self):
+    def __init__(self, maxsize=400):
         """
         Start memory.
         """
-        self.buffer = []
+        self.buffer   = deque(maxlen=maxsize)
+        self.maxsize  = maxsize
+        self.last_len = None
 
     def store(self, transition):
         """
@@ -37,7 +40,7 @@ class Memory:
             tuple of (obs1, acts, rews, obs2, done, vals, prob, advs)
         """
 
-        # Get stored values
+        # Get stored values.
         obs1 = np.array([row[0] for row in self.buffer])
         acts = np.array([row[1] for row in self.buffer])
         rews = np.array([row[2] for row in self.buffer])
@@ -46,13 +49,12 @@ class Memory:
         prob = np.array([row[5] for row in self.buffer])
         vals = np.array([row[6] for row in self.buffer])
 
-        # Not the most elegant piece of code ever, but it does the job.
+        # Calculate advantages.
         val1 = vals
         val2 = np.roll(vals, -1)
         val2[-1] = 0
         deltas = rews + GAMMA * val2 - val1
         advs = lfilter([1], [1, -GAMMA*GAE_LAMBDA], deltas[::-1])[::-1]
-
         # Normalise advantages.
         advs = (advs - advs.mean()) / (advs.std() + 1e-8)
 
@@ -62,4 +64,12 @@ class Memory:
         """
         Forget everything.
         """
-        self.buffer = []
+        self.last_len = len(self.buffer)
+        self.buffer   = deque(maxlen=self.maxsize)
+
+    def size(self):
+        if self.buffer:
+            tr_size = sum(sys.getsizeof(elem) for elem in self.buffer[0])
+        else:
+            tr_size = 0
+        return tr_size * len(self.buffer)

@@ -1,10 +1,8 @@
-from tensorflow.keras.layers import (
-    Layer,
-    Dense,
-    Conv2D,
-    MaxPooling2D,
-    Flatten
-)
+from tensorflow.keras.layers import (Layer,
+                                     Dense,
+                                     Conv2D,
+                                     MaxPooling2D,
+                                     Flatten)
 
 
 class ConvolutionalBase(Layer):
@@ -21,21 +19,17 @@ class ConvolutionalBase(Layer):
             kernel_size=5,
             strides=1,
             padding='valid',
-            activation=self.activation
-        )
+            activation=self.activation)
         self.pool1 = MaxPooling2D(
-            pool_size=2
-        )
+            pool_size=2)
         self.conv2 = Conv2D(
             filters=64,
             kernel_size=3,
             strides=2,
             padding='valid',
-            activation=self.activation
-        )
+            activation=self.activation)
         self.pool2 = MaxPooling2D(
-            pool_size=2
-        )
+            pool_size=2)
         self.flat1 = Flatten()
 
     def call(self, inputs, training=True):
@@ -58,8 +52,7 @@ class DenseBase(Layer):
         super(DenseBase, self).build(input_shape)
         self.dense1 = Dense(
             units=128,
-            activation=self.activation
-        )
+            activation=self.activation)
 
     def call(self, inputs, training=True):
         x = self.dense1(inputs)

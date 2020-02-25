@@ -1,7 +1,7 @@
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
 
-from networks import DenseBase
+from .networks import DenseBase
 
 class Actor(Model):
     """
@@ -28,8 +28,7 @@ class Actor(Model):
         self.base = DenseBase()
         self.last = Dense(
             units=action_space.n,
-            activation='softmax'
-        )
+            activation='softmax')
 
     def call(self, inputs):
         """
