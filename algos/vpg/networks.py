@@ -29,6 +29,11 @@ class Value(tf.keras.Model):
 
         return x
 
+    def get_value(self, obs):
+        pred = self.predict_on_batch(np.expand_dims(obs, axis=0))
+
+        return tf.squeeze(pred, axis=-1)
+
 
 class Policy(tf.keras.Model):
     def __init__(self, env):

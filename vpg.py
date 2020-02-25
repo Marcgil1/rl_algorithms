@@ -1,11 +1,12 @@
+import time
 import numpy as np
 import gym
 
 from algos.vpg.agent import VPGAgent
 
 
-def test(env_fn, agent, trials=10, render=True):
-    env = env_fn()
+def test(env_fn, agent, trials=10, render=False):
+    env  = env_fn()
     rews = np.zeros((trials,))
 
     for trial in range(trials):
@@ -14,10 +15,12 @@ def test(env_fn, agent, trials=10, render=True):
         while not done:
             if render:
                 env.render()
+                time.sleep(0.02)
             act = agent.act(obs)
             obs, rew, done, _ = env.step(act)
 
             rews[trial] += rew
+    env.close()
     return np.mean(rews)
 
 
@@ -48,11 +51,12 @@ def run_experiment(
         if not step % test_freq:
             results = test_fn(env_fn, agent)
             print('Step: %d \tMean episode rew: %f' % (step + 1, results))
+    env.close()
 
 
 if __name__ == '__main__':
 
-    env_name = 'CartPole-v0'
+    env_name = 'LunarLander-v2'
 
     env = gym.make(env_name)
     agent = VPGAgent(env)
