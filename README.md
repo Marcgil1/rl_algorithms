@@ -1,8 +1,15 @@
 # Overview
-This repository's aim is to provide easy to understand, documented TensorFlow
-implementations for various RL algoritms. Currently, just PPO-clip is present.
-However, in the next few weeks VPG, DDPG and TD3 will follow.
+TensorFlow 2 implementation of various RL algorithms.
+Agents follow an ```act(obs)```-```observe(transition)``` interface.
+
+Currently implemented algorithms are
+1. PPO, clip version
+2. VPG
+
+Both for discrete action spaces and continuous observations.
 
 # Resources
+These resources have been (and continue being) quite useful:
+
 - Spinning Up (spinningup.openai.com)
 - Reinforcement Learning: An introduction
