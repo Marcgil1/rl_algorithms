@@ -3,6 +3,7 @@ import numpy as np
 import gym
 
 from algos.vpg.agent import VPGAgent
+from algos.ddpg.agent import DDPGAgent
 
 
 def test(env_fn, agent, trials=10, render=False):
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     env_name = 'LunarLander-v2'
 
     env = gym.make(env_name)
-    agent = VPGAgent(env)
+    agent = DDPGAgent(env)
 
     run_experiment(
         agent,
