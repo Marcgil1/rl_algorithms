@@ -7,6 +7,7 @@ Currently implemented algorithms are
 2. VPG
 
 Both for discrete action spaces and continuous observations.
+DDPG is halfway there.
 
 # Resources
 These resources have been (and continue being) quite useful:
