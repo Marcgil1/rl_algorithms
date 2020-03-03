@@ -13,6 +13,11 @@ class DDPGAgent:
         self.act_space = env.action_space
         self.obs_space = env.observation_space
 
+        self.memory = Memory(env, int(1e6), 64)
+
+        self.policy_opt = ko.Adam(lr=1e-4)
+        self.qvalue_opt = ko.Adam(lr=1e-3)
+        
         self.polyak = 0.001
         self.gamma  = 0.99
 
@@ -22,10 +27,7 @@ class DDPGAgent:
         self.qvalue_targ = QValue(env)
         self._init_target_nets()
 
-        self.policy_opt = ko.Adam(lr=1e-4)
-        self.qvalue_opt = ko.Adam(lr=1e-3)
 
-        self.memory = Memory(env, int(1e6), 64)
 
     def act(self, obs, test=False):
         act   = self.policy.get_action(obs)
