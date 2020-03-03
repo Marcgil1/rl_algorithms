@@ -25,8 +25,6 @@ class Memory:
         self.size = min(self.size + 1, self.max_size)
 
     def get_batch(self):
-        print(self.size)
-        print(self.batch_len)
         idxs = np.random.randint(self.size, size=self.batch_len)
 
         obs1 = self.obs1[idxs]
@@ -35,4 +33,8 @@ class Memory:
         obs2 = self.obs2[idxs]
 
         return obs1, acts, rews, obs2
+
+    @property
+    def can_sample(self):
+        return self.size >= self.batch_len
 

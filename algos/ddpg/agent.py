@@ -1,4 +1,9 @@
 import numpy as np
+import tensorflow as tf
+import tensorflow.keras.losses as kl
+import tensorflow.keras.optimizers as ko
+import tensorflow.keras.backend as K
+
 from .networks import Policy
 from .networks import QValue
 from .memory import Memory
@@ -8,15 +13,19 @@ class DDPGAgent:
         self.act_space = env.action_space
         self.obs_space = env.observation_space
 
-        self.polyak = 0.01
+        self.polyak = 0.001
+        self.gamma  = 0.99
 
         self.policy      = Policy(env)
         self.policy_targ = Policy(env)
-        self.qvalue      = QValue()
-        self.qvalue_targ = QValue()
+        self.qvalue      = QValue(env)
+        self.qvalue_targ = QValue(env)
         self._init_target_nets()
 
-        self.memory = Memory(env, int(1e5),128)
+        self.policy_opt = ko.Adam(lr=1e-4)
+        self.qvalue_opt = ko.Adam(lr=1e-3)
+
+        self.memory = Memory(env, int(1e6), 64)
 
     def act(self, obs, test=False):
         act   = self.policy.get_action(obs)
@@ -33,7 +42,12 @@ class DDPGAgent:
 
     def observe(self, transition):
         self.memory.add(transition)
-        # ...
+        
+        if self.memory.can_sample:
+            batch = self.memory.get_batch()
+            self._update_qvalue(batch)
+            self._update_policy(batch)
+            self._update_target_nets()
 
     def _init_target_nets(self):
         obs = self.obs_space.sample()
@@ -47,18 +61,40 @@ class DDPGAgent:
         self.qvalue_targ.set_weights(self.qvalue.get_weights())
 
     def _update_target_nets(self):
-        self.policy_targ.set_weights(
-            self.polyak*self.policy.get_weights()
-            + (1 - self.polyak)*self.policy_targ.get_weights()
-        )
-        self.qvalue_targ.set_weights(
-            self.polyak*self.qvalue.get_weights()
-            + (1 - self.polyak)*self.qvalue_targ.get_weights()
+        self.policy_targ.set_weights([
+            self.polyak*w
+            + (1 - self.polyak)*target_w
+            for w, target_w in zip(self.policy.get_weights(), self.policy_targ.get_weights())
+        ])
+        self.qvalue_targ.set_weights([
+            self.polyak*w
+            + (1 - self.polyak)*target_w
+            for w, target_w in zip(self.qvalue.get_weights(), self.qvalue_targ.get_weights())
+        ])
+
+    @tf.function
+    def _update_qvalue(self, batch):
+        obs1, acts, rews, obs2 = batch
+
+        targets = tf.stop_gradient(
+            rews + self.gamma*self.qvalue_targ(obs2, self.policy_targ(obs2))
         )
 
-if __name__ == '__main__':
-    import gym
-    
-    env = gym.make('MountainCarContinuous-v2')
-    
-    agent = DDPGAgent(env)
+        with tf.GradientTape() as tape:
+            preds = self.qvalue(obs1, acts)
+            loss  = kl.MSE(targets, preds)
+        grads = tape.gradient(loss, self.qvalue.variables)
+        grads_and_vars = list(zip(grads, self.qvalue.variables))
+
+        self.qvalue_opt.apply_gradients(grads_and_vars)
+
+    @tf.function
+    def _update_policy(self, batch):
+        obs1, acts, rews, obs2 = batch
+
+        with tf.GradientTape() as tape:
+            loss = -K.mean(self.qvalue(obs1, self.policy(obs1)))
+        grads = tape.gradient(loss, self.policy.variables)
+        grads_and_vars = list(zip(grads, self.policy.variables))
+
+        self.policy_opt.apply_gradients(grads_and_vars)

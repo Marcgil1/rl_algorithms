@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras.layers as kl
+import tensorflow.keras.initializers as ki
 
 
 class Policy(tf.keras.Model):
@@ -10,26 +11,30 @@ class Policy(tf.keras.Model):
         self.act_high = env.action_space.high
         self.act_low  = env.action_space.low
 
-        self.dense1    = kl.Dense(
-            units=64,
+        self.norm       = kl.BatchNormalization()
+        self.hidden1    = kl.Dense(
+            units=400,
             activation='relu'
         )
-        self.dense2    = kl.Dense(
-            units=64,
+        self.hidden2    = kl.Dense(
+            units=300,
             activation='relu'
         )
-        self.dense3    = kl.Dense(
+        self.last_layer = kl.Dense(
             units=self.act_dim,
-            activation='sigmoid'
+            kernel_initializer=ki.RandomUniform(-3e-3, 3e-3),
+            bias_initializer=ki.RandomUniform(-3e-3, 3e-3),
+            activation='tanh'
         )
         self.transform = kl.Lambda(
-            lambda x: x * (self.act_high - self.act_low) + self.act_low
+            lambda x: (x + 1.)*(self.act_high - self.act_low)/2. + self.act_low
         )
 
     def call(self, obss):
-        x = self.dense1(obss)
-        x = self.dense2(x)
-        x = self.dense3(x)
+        x = self.norm(obss)
+        x = self.hidden1(x)
+        x = self.hidden2(x)
+        x = self.last_layer(x)
         x = self.transform(x)
 
         return x
@@ -41,30 +46,38 @@ class Policy(tf.keras.Model):
 
 
 class QValue(tf.keras.Model):
-    def __init__(self):
+    def __init__(self, env):
         super().__init__()
 
-        self.concat = kl.Concatenate(
+        self.obs_norm   = kl.BatchNormalization()
+        self.act_norm   = kl.BatchNormalization()
+        self.concat     = kl.Concatenate(
             axis=-1
         )
-        self.dense1 = kl.Dense(
-            units=64,
+        self.hidden1    = kl.Dense(
+            units=400,
             activation='relu'
         )
-        self.dense2 = kl.Dense(
-            units=64,
+        self.hidden2    = kl.Dense(
+            units=300,
             activation='relu'
         )
-        self.dense3 = kl.Dense(
+        self.last_layer = kl.Dense(
             units=1,
+            kernel_initializer=ki.RandomUniform(-3e-3, 3e-3),
+            bias_initializer=ki.RandomUniform(-3e-3, 3e-3),
             activation='linear'
         )
 
     def call(self, obss, acts):
-        x = self.concat([obss, acts])
-        x = self.dense1(x)
-        x = self.dense2(x)
-        x = self.dense3(x)
+        x = self.obs_norm(obss)
+        x = self.hidden1(obss)
+
+        y = self.act_norm(acts)
+
+        x = self.concat([x, y])
+        x = self.hidden2(x)
+        x = self.last_layer(x)
 
         return x
 

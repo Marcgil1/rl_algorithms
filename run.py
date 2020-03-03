@@ -3,6 +3,8 @@ import numpy as np
 import gym
 
 from algos.vpg.agent import VPGAgent
+from algos.ddpg.agent import DDPGAgent
+from utils.setup import setup_keras
 
 
 def test(env_fn, agent, trials=10, render=False):
@@ -13,10 +15,10 @@ def test(env_fn, agent, trials=10, render=False):
         
         obs, done = env.reset(), False
         while not done:
-            if render:
+            if render and trial == 0:
                 env.render()
                 time.sleep(0.02)
-            act = agent.act(obs)
+            act = agent.act(obs, test=True)
             obs, rew, done, _ = env.step(act)
 
             rews[trial] += rew
@@ -55,11 +57,12 @@ def run_experiment(
 
 
 if __name__ == '__main__':
+    setup_keras()
 
-    env_name = 'LunarLander-v2'
+    env_name = 'HalfCheetah-v2'
 
     env = gym.make(env_name)
-    agent = VPGAgent(env)
+    agent = DDPGAgent(env)
 
     run_experiment(
         agent,
