@@ -5,9 +5,7 @@ Agents follow an ```act(obs)```-```observe(transition)``` interface.
 Currently implemented algorithms are
 1. PPO, clip version
 2. VPG
-
-Both for discrete action spaces and continuous observations.
-DDPG is halfway there.
+3. DDPG
 
 # Resources
 These resources have been (and continue being) quite useful:
