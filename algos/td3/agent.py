@@ -19,13 +19,14 @@ class TD3Agent:
         self.polyak              = 5e-3
         self.gamma               = 0.99
         self.act_noise           = 0.1
+        self.act_clip            = 0.5
         self.targ_act_noise      = 0.2
         self.targ_act_clip       = 0.5
         self.policy_delay        = 2
         self.initial_exploration = 10000
 
-        self.qvalue_opt = ko.Adam(1e-3)
-        self.policy_opt = ko.Adam(1e-3)
+        self.qvalue_opt = ko.Adam(3e-4)
+        self.policy_opt = ko.Adam(3e-4)
 
         self.qvalue1      = QValue(env)
         self.qvalue2      = QValue(env)
@@ -46,7 +47,11 @@ class TD3Agent:
         if test:
             noise = np.zeros_like(act)
         else:
-            noise = np.random.normal(0, self.act_noise, act.shape)
+            noise = np.clip(
+                np.random.normal(0, self.act_noise, act.shape),
+                -self.act_clip,
+                self.act_clip
+            )
 
         return np.clip(
             act + noise,
@@ -82,21 +87,21 @@ class TD3Agent:
 
     def _update_target_nets(self):
         self.qvalue1_targ.set_weights([
-            self.polyak*w + (1 - self.polyak)*targ_w
+            self.polyak*w + (1. - self.polyak)*targ_w
             for w, targ_w in zip(
                 self.qvalue1.get_weights(),
                 self.qvalue1_targ.get_weights()
             )
         ])
         self.qvalue2_targ.set_weights([
-            self.polyak*w + (1 - self.polyak)*targ_w
+            self.polyak*w + (1. - self.polyak)*targ_w
             for w, targ_w in zip(
                 self.qvalue2.get_weights(),
                 self.qvalue2_targ.get_weights()
             )
         ])
         self.policy_targ.set_weights([
-            self.polyak*w + (1 - self.polyak)*targ_w
+            self.polyak*w + (1. - self.polyak)*targ_w
             for w, targ_w in zip(
                 self.policy.get_weights(),
                 self.policy_targ.get_weights()
@@ -105,7 +110,8 @@ class TD3Agent:
 
     @tf.function
     def _update_qvalues(self, batch):
-        obs1, acts, rews, obs2 = batch
+        obs1, acts, rews, obs2, done = batch
+        done = tf.cast(done, tf.float32)
 
         targ_acts = self.policy_targ(obs2)
         noise     = tf.random.normal(
@@ -118,36 +124,23 @@ class TD3Agent:
             -self.targ_act_clip,
             self.targ_act_clip,
         )
-        targ_acts += tf.cast(noise, dtype=tf.float64)
 
-
-        targets = tf.stop_gradient(
-            rews +self.gamma*tf.minimum(
-                self.qvalue1_targ(obs2, targ_acts),
-                self.qvalue2_targ(obs2, targ_acts)
-            )
+        targets = rews + (1. - done)*self.gamma*tf.minimum(
+            self.qvalue1_targ(obs2, targ_acts),
+            self.qvalue2_targ(obs2, targ_acts)
         )
 
-        with tf.GradientTape() as tape1:
-            loss1 = kls.MSE(targets, self.qvalue1(obs1, acts))
-        with tf.GradientTape() as tape2:
-            loss2 = kls.MSE(targets, self.qvalue2(obs1, acts))
-        grads1 = tape1.gradient(loss1, self.qvalue1.variables)
-        grads2 = tape2.gradient(loss2, self.qvalue2.variables)
-
-        grads_and_vars1 = list(zip(grads1, self.qvalue1.variables))
-        grads_and_vars2 = list(zip(grads2, self.qvalue2.variables))
-
-        self.qvalue_opt.apply_gradients(grads_and_vars1)
-        self.qvalue_opt.apply_gradients(grads_and_vars2)
+        self.qvalue_opt.minimize(
+            lambda: kls.MSE(targets, self.qvalue1(obs1, acts))
+                    + kls.MSE(targets, self.qvalue2(obs1, acts)),
+            self.qvalue1.variables + self.qvalue2.variables
+        )
 
     @tf.function
     def _update_policy(self, batch):
-        obs1, acts, rews, obs2 = batch
+        obs1, acts, rews, obs2, done = batch
 
-        with tf.GradientTape() as tape:
-            loss = -K.mean(self.qvalue1(obs1, self.policy(obs1)))
-        grads          = tape.gradient(loss, self.policy.variables)
-        grads_and_vars = list(zip(grads, self.policy.variables))
-
-        self.policy_opt.apply_gradients(grads_and_vars)
+        self.policy_opt.minimize(
+            lambda: -K.mean(self.qvalue1(obs1, self.policy(obs1))),
+            self.policy.variables
+        )

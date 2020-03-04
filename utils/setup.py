@@ -16,4 +16,4 @@ def setup_keras():
     """
     import tensorflow as tf
 
-    tf.keras.backend.set_floatx('float64')
+    tf.keras.backend.set_floatx('float32')

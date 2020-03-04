@@ -5,7 +5,6 @@ import gym
 from algos.vpg.agent import VPGAgent
 from algos.ddpg.agent import DDPGAgent
 from algos.td3.agent import TD3Agent
-from utils.setup import setup_keras
 
 
 def test(env_fn, agent, trials=10, render=False):
@@ -58,7 +57,6 @@ def run_experiment(
 
 
 if __name__ == '__main__':
-    setup_keras()
 
     env_name = 'HalfCheetah-v2'
 
