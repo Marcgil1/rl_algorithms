@@ -13,6 +13,11 @@ class DDPGAgent:
         self.act_space = env.action_space
         self.obs_space = env.observation_space
 
+        self.memory = Memory(env, int(1e6), 64)
+
+        self.policy_opt = ko.Adam(lr=1e-4)
+        self.qvalue_opt = ko.Adam(lr=1e-3)
+        
         self.polyak = 0.001
         self.gamma  = 0.99
 
@@ -22,10 +27,7 @@ class DDPGAgent:
         self.qvalue_targ = QValue(env)
         self._init_target_nets()
 
-        self.policy_opt = ko.Adam(lr=1e-4)
-        self.qvalue_opt = ko.Adam(lr=1e-3)
 
-        self.memory = Memory(env, int(1e6), 64)
 
     def act(self, obs, test=False):
         act   = self.policy.get_action(obs)
@@ -62,14 +64,18 @@ class DDPGAgent:
 
     def _update_target_nets(self):
         self.policy_targ.set_weights([
-            self.polyak*w
-            + (1 - self.polyak)*target_w
-            for w, target_w in zip(self.policy.get_weights(), self.policy_targ.get_weights())
+            self.polyak*w + (1 - self.polyak)*target_w
+            for w, target_w in zip(
+                self.policy.get_weights(),
+                self.policy_targ.get_weights()
+            )
         ])
         self.qvalue_targ.set_weights([
-            self.polyak*w
-            + (1 - self.polyak)*target_w
-            for w, target_w in zip(self.qvalue.get_weights(), self.qvalue_targ.get_weights())
+            self.polyak*w + (1 - self.polyak)*target_w
+            for w, target_w in zip(
+                self.qvalue.get_weights(),
+                self.qvalue_targ.get_weights()
+            )
         ])
 
     @tf.function
@@ -77,13 +83,16 @@ class DDPGAgent:
         obs1, acts, rews, obs2 = batch
 
         targets = tf.stop_gradient(
-            rews + self.gamma*self.qvalue_targ(obs2, self.policy_targ(obs2))
+            rews + self.gamma*self.qvalue_targ(
+                obs2,
+                self.policy_targ(obs2)
+            )
         )
 
         with tf.GradientTape() as tape:
             preds = self.qvalue(obs1, acts)
             loss  = kl.MSE(targets, preds)
-        grads = tape.gradient(loss, self.qvalue.variables)
+        grads          = tape.gradient(loss, self.qvalue.variables)
         grads_and_vars = list(zip(grads, self.qvalue.variables))
 
         self.qvalue_opt.apply_gradients(grads_and_vars)
@@ -94,7 +103,7 @@ class DDPGAgent:
 
         with tf.GradientTape() as tape:
             loss = -K.mean(self.qvalue(obs1, self.policy(obs1)))
-        grads = tape.gradient(loss, self.policy.variables)
+        grads          = tape.gradient(loss, self.policy.variables)
         grads_and_vars = list(zip(grads, self.policy.variables))
 
         self.policy_opt.apply_gradients(grads_and_vars)
