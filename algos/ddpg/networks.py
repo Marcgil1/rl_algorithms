@@ -69,6 +69,7 @@ class QValue(tf.keras.Model):
             bias_initializer=ki.RandomUniform(-3e-3, 3e-3),
             activation='linear'
         )
+        self.reshape    = kl.Reshape(tuple())
 
     def call(self, obss, acts):
         x = self.obs_norm(obss)
@@ -79,13 +80,14 @@ class QValue(tf.keras.Model):
         x = self.concat([x, y])
         x = self.hidden2(x)
         x = self.last_layer(x)
+        x = self.reshape(x)
 
         return x
 
     def get_value(self, obs, act):
         x = self(
-            np.expand_dims(obs, axis=0),
-            np.expand_dims(act, axis=0)
+            tf.expand_dims(obs, axis=0),
+            tf.expand_dims(act, axis=0)
         )
 
         return tf.squeeze(x).numpy()
