@@ -6,8 +6,7 @@ Currently implemented algorithms are
 1. PPO, clip version
 2. VPG
 3. DDPG
-
-TD3 is on its way.
+4. TD3
 
 # Resources
 These resources have been (and continue being) quite useful:
