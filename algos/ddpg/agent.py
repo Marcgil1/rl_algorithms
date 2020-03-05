@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.keras.losses as kl
+import tensorflow.keras.losses as kls
 import tensorflow.keras.optimizers as ko
 import tensorflow.keras.backend as K
 
@@ -54,6 +54,7 @@ class DDPGAgent:
     def _init_target_nets(self):
         obs = self.obs_space.sample()
         act = self.act_space.sample()
+
         self.policy.get_action(obs)
         self.qvalue.get_value(obs, act)
         self.policy_targ.get_action(obs)
@@ -82,28 +83,20 @@ class DDPGAgent:
     def _update_qvalue(self, batch):
         obs1, acts, rews, obs2 = batch
 
-        targets = tf.stop_gradient(
-            rews + self.gamma*self.qvalue_targ(
-                obs2,
-                self.policy_targ(obs2)
-            )
+        targets = (
+            rews + self.gamma*self.qvalue_targ(obs2, self.policy_targ(obs2))
         )
 
-        with tf.GradientTape() as tape:
-            preds = self.qvalue(obs1, acts)
-            loss  = kl.MSE(targets, preds)
-        grads          = tape.gradient(loss, self.qvalue.variables)
-        grads_and_vars = list(zip(grads, self.qvalue.variables))
-
-        self.qvalue_opt.apply_gradients(grads_and_vars)
-
+        self.qvalue_opt.minimize(
+            lambda: kls.MSE(targets, self.qvalue(obs1, acts)),
+            self.qvalue.variables
+        )
+        
     @tf.function
     def _update_policy(self, batch):
         obs1, acts, rews, obs2 = batch
 
-        with tf.GradientTape() as tape:
-            loss = -K.mean(self.qvalue(obs1, self.policy(obs1)))
-        grads          = tape.gradient(loss, self.policy.variables)
-        grads_and_vars = list(zip(grads, self.policy.variables))
-
-        self.policy_opt.apply_gradients(grads_and_vars)
+        self.policy_opt.minimize(
+            lambda: -K.mean(self.qvalue(obs1, self.policy(obs1))),
+            self.policy.variables
+        )

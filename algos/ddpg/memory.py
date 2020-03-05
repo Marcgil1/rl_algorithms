@@ -7,10 +7,22 @@ class Memory:
         self.max_size  = max_size
         self.batch_len = batch_len
 
-        self.obs1 = np.zeros((max_size,) + env.observation_space.shape)
-        self.acts = np.zeros((max_size,) + env.action_space.shape)
-        self.rews = np.zeros((max_size,))
-        self.obs2 = np.zeros((max_size,) + env.observation_space.shape)
+        self.obs1 = np.zeros(
+            (max_size,) + env.observation_space.shape,
+            dtype=np.float32
+        )
+        self.acts = np.zeros(
+            (max_size,) + env.action_space.shape,
+            dtype=np.float32ç
+        )
+        self.rews = np.zeros(
+            (max_size,),
+            dtype=np.float32
+        )
+        self.obs2 = np.zeros(
+            (max_size,) + env.observation_space.shape,
+            dtype=np.float32
+        )
 
         self.idx  = 0
 

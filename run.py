@@ -61,7 +61,7 @@ if __name__ == '__main__':
     env_name = 'HalfCheetah-v2'
 
     env = gym.make(env_name)
-    agent = TD3Agent(env)
+    agent = DDPGAgent(env)
 
     run_experiment(
         agent,
