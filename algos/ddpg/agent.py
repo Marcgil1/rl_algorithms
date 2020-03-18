@@ -8,6 +8,7 @@ from .networks import Policy
 from .networks import QValue
 from .memory import Memory
 
+
 class DDPGAgent:
     def __init__(self, env):
         self.act_space = env.action_space
@@ -26,8 +27,6 @@ class DDPGAgent:
         self.qvalue      = QValue(env)
         self.qvalue_targ = QValue(env)
         self._init_target_nets()
-
-
 
     def act(self, obs, test=False):
         act   = self.policy.get_action(obs)
@@ -94,7 +93,7 @@ class DDPGAgent:
         
     @tf.function
     def _update_policy(self, batch):
-        obs1, acts, rews, obs2 = batch
+        obs1, _, _, _ = batch
 
         self.policy_opt.minimize(
             lambda: -K.mean(self.qvalue(obs1, self.policy(obs1))),

@@ -138,7 +138,7 @@ class TD3Agent:
 
     @tf.function
     def _update_policy(self, batch):
-        obs1, acts, rews, obs2, done = batch
+        obs1, _, _, _, _ = batch
 
         self.policy_opt.minimize(
             lambda: -K.mean(self.qvalue1(obs1, self.policy(obs1))),

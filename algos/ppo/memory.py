@@ -41,13 +41,13 @@ class Memory:
         """
 
         # Get stored values.
-        obs1 = np.array([row[0] for row in self.buffer])
-        acts = np.array([row[1] for row in self.buffer])
-        rews = np.array([row[2] for row in self.buffer])
-        obs2 = np.array([row[3] for row in self.buffer])
-        done = np.array([row[4] for row in self.buffer])
-        prob = np.array([row[5] for row in self.buffer])
-        vals = np.array([row[6] for row in self.buffer])
+        obs1 = np.array([row[0] for row in self.buffer], dtype=np.float32)
+        acts = np.array([row[1] for row in self.buffer], dtype=np.int32)
+        rews = np.array([row[2] for row in self.buffer], dtype=np.float32)
+        obs2 = np.array([row[3] for row in self.buffer], dtype=np.float32)
+        done = np.array([row[4] for row in self.buffer], dtype=np.bool)
+        prob = np.array([row[5] for row in self.buffer], dtype=np.float32)
+        vals = np.array([row[6] for row in self.buffer], dtype=np.float32)
 
         # Calculate advantages.
         val1 = vals
@@ -57,6 +57,7 @@ class Memory:
         advs = lfilter([1], [1, -GAMMA*GAE_LAMBDA], deltas[::-1])[::-1]
         # Normalise advantages.
         advs = (advs - advs.mean()) / (advs.std() + 1e-8)
+        advs = advs.astype(np.float32)
 
         return obs1, acts, rews, obs2, done, vals, prob, advs
 

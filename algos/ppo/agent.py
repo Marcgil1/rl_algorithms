@@ -14,7 +14,7 @@ class PPOAgent:
     Implementation of PPO agent structured as an actor-critic method.
     """
     
-    def __init__(self, action_space, observation_space):
+    def __init__(self, env):
         """
         Initialise agent.
 
@@ -28,24 +28,26 @@ class PPOAgent:
         """
 
         # Store environmental spaces.
-        self.act_space = action_space
-        self.obs_space = observation_space
+        self.act_space = env.action_space
+        self.obs_space = env.observation_space
 
         # Memory and networks.
         self.memory       = Memory()
-        self.actor        = Actor(action_space, observation_space)
-        self.critic       = Critic(observation_space)
+        self.actor        = Actor(self.act_space, self.obs_space)
+        self.critic       = Critic(self.obs_space)
         self.actor_loss   = None
         self.critic_loss  = None
         self.advs         = None
         self.rews         = None
         self.acts         = None
+        self.probs        = None
+        self.val          = None
 
         # Optimizers
         self.actor_optimizer  = tf.keras.optimizers.Adam(0.005)
         self.critic_optimizer = tf.keras.optimizers.Adam(0.005)
 
-    def act(self, obs):
+    def act(self, obs, test=False):
         """
         Take action acordint to obs.
 
@@ -89,10 +91,6 @@ class PPOAgent:
         }
 
     def _update(self):
-        """
-        Get values stored in memory (and compute probs and advs). Then, update
-        actor and critic nets.
-        """
         obs1, acts, rews, obs2, done, vals, probs, advs = self.memory.get_vals()
         
         self.actor_loss  = self._update_actor(obs1, acts, advs, probs)
@@ -104,10 +102,7 @@ class PPOAgent:
         self.memory.empty()
 
     def _update_actor(self, obs1, acts, advs, probs):
-        """
-        Update actor ACTOR_UPDATE_STEPS times so to minimise actor_loss.
-        """
-        grad_list = []
+        
         for _ in range(ACTOR_UPDATE_STEPS):
             with tf.GradientTape() as tape:
                 losses = actor_loss(self.actor(obs1), obs1, acts, advs, probs)
@@ -118,10 +113,6 @@ class PPOAgent:
         return np.mean(losses)
 
     def _update_critic(self, obs1, rews):
-        """
-        Update critic CRITIC_UPDATE_STEPS times so to minimise MSE with
-        respect to rews.
-        """
         for _ in range(CRITIC_UPDATE_STEPS):
             with tf.GradientTape() as tape:
                 vals = self.critic(obs1)
@@ -134,30 +125,7 @@ class PPOAgent:
 
 @tf.function
 def actor_loss(logits, obs1, acts, advs, old_probs):
-    """
-    Compute PPO loss of actor.
 
-    ARGS
-    ----
-    logits :
-        Actual action probabilities
-
-    obs1 : np.array
-        Batch of observations.
-
-    acts : np.array
-        Batch of actions.
-
-    advs : np.array
-        Batch of advantages.
-
-    old_probs :
-        Batch of old probabilities.
-
-    RETURNS
-    -------
-        np.array representing a batch of losses for the given inputs.
-    """
     indices = [
         [i, acts[i]]
         for i in range(len(obs1))
