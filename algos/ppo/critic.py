@@ -10,20 +10,10 @@ class Critic(Model):
     """
 
     def __init__(self, observation_space):
-        """
-        Initialise Model.
-
-        ARGS
-        ----
-        observation_space : gym.env.Box
-            Observation space. Must be continuous.
-        """
         super(Critic, self).__init__()
 
-        # We might need this.
         self.obs_space = observation_space
 
-        # Actual network parameters.
         self.base = DenseBase()
         self.last = Dense(
             units=1,
@@ -31,18 +21,6 @@ class Critic(Model):
         )
 
     def call(self, inputs):
-        """
-        Return batch of values for batch of inputs.
-
-        ARGS
-        ----
-        inputs : np.array
-            Batch of observations.
-
-        RETURNS
-        -------
-        Batch of values.
-        """
         x = self.base(inputs)
         x = self.last(x)
         return x
