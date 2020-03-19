@@ -29,7 +29,7 @@ class VPGAgent:
             loss='mse'
         )
 
-    def act(self, obs):
+    def act(self, obs, test=False):
         act      = self.policy.get_action(obs).numpy()
         self.val = self.value.get_value(obs).numpy()
 

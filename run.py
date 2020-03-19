@@ -2,9 +2,9 @@ import time
 import numpy as np
 import gym
 
-# from algos.vpg.agent import VPGAgent
+from algos.vpg.agent import VPGAgent
 # from algos.ddpg.agent import DDPGAgent
-# from algos.td3.agent import TD3Agent
+from algos.td3.agent import TD3Agent
 from algos.ppo.agent import PPOAgent
 
 
@@ -59,10 +59,10 @@ def run_experiment(
 
 if __name__ == '__main__':
 
-    env_name = 'MountainCar-v0'
+    env_name = 'Acrobot-v1'
 
     env = gym.make(env_name)
-    agent = PPOAgent(env)
+    agent = VPGAgent(env)
 
     run_experiment(
         agent,
