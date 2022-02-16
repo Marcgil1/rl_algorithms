@@ -12,7 +12,7 @@ def test(env_fn, agent, trials=10, render=False):
     rews = np.zeros((trials,))
 
     for trial in range(trials):
-        
+
         obs, done = env.reset(), False
         while not done:
             if render and trial == 0:
